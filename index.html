@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Valentine's Invitation</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: 'Arial', sans-serif;
+      background-color: #ffebf0;
+      color: #d6336c;
+      overflow: hidden;
+      position: relative;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    .rose-img {
+      width: 200px;
+      height: auto;
+      margin-bottom: 20px;
+    }
+    .button-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    button {
+      font-size: 24px;
+      padding: 16px 32px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: 0.3s;
+      position: absolute;
+    }
+    #yes {
+      background-color: #ff69b4;
+      color: white;
+      z-index: 2;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .no {
+      background-color: #bbb;
+      color: white;
+      z-index: 1;
+      /* Posición inicial */
+      left: 10%;
+      top: 30%;
+    }
+    button:hover {
+      opacity: 0.8;
+    }
+    .hidden {
+      display: none;
+    }
+    #bunny {
+      width: 300px;
+      height: auto;
+      margin-top: 20px;
+    }
+    #message {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .love-text {
+      font-weight: bold;
+      position: absolute;
+      color: #b30000;
+      animation: fadeIn 0.5s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Would you like to be my Valentine?</h1>
+  <img class="rose-img" src="Rosa.jpeg" alt="A beautiful rose" />
+  <br>
+  <div class="button-container" id="buttonContainer">
+    <button id="yes" onclick="showBunny()">Yes</button>
+    <button class="no" id="no" onclick="handleNo()">No</button>
+  </div>
+  <br>
+  <img id="bunny" class="hidden" src="Bunny.jpeg" alt="Cute bunny" />
+  <h2 id="message" class="hidden">Happy Valentine's Day! ❤️</h2>
+  
+  <script>
+    // Referencias a elementos
+    let buttonContainer = document.getElementById("buttonContainer");
+    let bunnyImage = document.getElementById("bunny");
+    let message = document.getElementById("message");
+    let yesButton = document.getElementById("yes");
+    let noButton = document.getElementById("no");
+
+    // Frases para el botón Yes (4 idiomas)
+    let lovePhrasesYes = ["Te amo", "Të dua", "Ich liebe dich", "Jeg elsker dig"];
+    // Frases para el botón No (varios idiomas)
+    let lovePhrasesNo = [
+      "I love you", "Je t'aime", "Ti amo", "Eu te amo", "愛してる", "Я тебя люблю", "사랑해", "Σ' αγαπώ", 
+      "Jag älskar dig", "Volim te", "Kocham cię", "T'estimo", "Szeretlek", "Ik hou van jou", "Jeg elsker dig", 
+      "Naku penda", "Kuv hlub koj", "Ke a go rata", "Mi amas vin", "Mahal kita", "Ngiyakuthanda", "Ana behibek", 
+      "Minä rakastan sinua", "Wo ai ni", "Saya cinta padamu", "Ya tebya lyublyu", "Ek het jou lief", "O ljubim te", 
+      "Amo-te", "Ich hab dich lieb", "Rakastan sinua", "Ti voglio bene", "Mwen renmen ou", "Ngiyakuthanda", 
+      "Ich lieb dich", "Ndinokuda", "Me ka aloha wau ia 'oe", "Jeg elsker deg", "Taim i' ngra leat", "Es mīlu tevi", 
+      "Es tevi mīlu", "Timi lai maya garchhu", "Miluji tě"
+    ];
+    let loveIndexNo = 0;
+    let yesSize = 24; // Tamaño inicial del botón Yes
+
+    // Acumulador de rectángulos de frases generadas con No
+    let placedNoRects = [];
+
+    // --- Funciones auxiliares ---
+    // Dado (x, y) y un ancho y alto, crea un objeto rect
+    function createRect(x, y, width, height) {
+      return { left: x, top: y, right: x + width, bottom: y + height };
+    }
+
+    // Verifica si dos rectángulos se solapan
+    function rectsOverlap(rect1, rect2) {
+      return !(
+        rect1.right <= rect2.left ||
+        rect1.left >= rect2.right ||
+        rect1.bottom <= rect2.top ||
+        rect1.top >= rect2.bottom
+      );
+    }
+
+    // Verifica si el rectángulo definido por (x, y, width, height) se solapa con el rect dado
+    function isRectOverlap(x, y, width, height, rect) {
+      const candidate = createRect(x, y, width, height);
+      return rectsOverlap(candidate, rect);
+    }
+
+    // Retorna una posición aleatoria para un elemento de dimensiones dadas, evitando solaparse con los rectángulos en "exclusions".
+    // Si no se pasa ningún elemento en exclusions, se posiciona libremente.
+    function getNonOverlappingPosition(elementWidth, elementHeight, exclusions = []) {
+      const maxAttempts = 100;
+      let attempt = 0;
+      let x, y, candidate;
+      while (attempt < maxAttempts) {
+        x = Math.random() * (window.innerWidth - elementWidth);
+        y = Math.random() * (window.innerHeight - elementHeight);
+        candidate = createRect(x, y, elementWidth, elementHeight);
+        let overlapFound = false;
+        for (let ex of exclusions) {
+          if (rectsOverlap(candidate, ex)) {
+            overlapFound = true;
+            break;
+          }
+        }
+        if (!overlapFound) {
+          return { x, y };
+        }
+        attempt++;
+      }
+      // Si no se encuentra posición sin solapamiento en maxAttempts, se retorna la última posición calculada
+      return { x, y };
+    }
+
+    // --- Funciones de comportamiento ---
+
+    // Al presionar No:
+    // 1. Se mueve el botón "No" dentro de un rango máximo de ±150 píxeles respecto a su posición actual.
+    // 2. Además, se asegura que se mantenga dentro de un área de 1000 x 400 píxeles.
+    // 3. Se incrementa el tamaño del botón "Yes" y se generan 5 frases del arreglo lovePhrasesNo.
+    function handleNo() {
+      const noRect = noButton.getBoundingClientRect();
+      const yesRect = yesButton.getBoundingClientRect();
+
+      // Definir el área permitida de 1000 x 400 píxeles (origen en 0,0)
+      const allowedWidth = 1000;
+      const allowedHeight = 400;
+
+      // Posición actual del botón No
+      const currentX = noRect.left;
+      const currentY = noRect.top;
+
+      // Calcular los límites permitidos para el nuevo movimiento (±150 px)
+      const minX = Math.max(0, currentX - 150);
+      const maxX = Math.min(allowedWidth - noRect.width, currentX + 150);
+      const minY = Math.max(0, currentY - 150);
+      const maxY = Math.min(allowedHeight - noRect.height, currentY + 150);
+
+      let newX, newY;
+      let attempts = 0;
+      const maxAttempts = 100;
+
+      do {
+        newX = minX + Math.random() * (maxX - minX);
+        newY = minY + Math.random() * (maxY - minY);
+        attempts++;
+      } while (attempts < maxAttempts && isRectOverlap(newX, newY, noRect.width, noRect.height, yesRect));
+
+      noButton.style.left = newX + "px";
+      noButton.style.top = newY + "px";
+
+      // Incrementar el tamaño del botón "Yes" (aumenta 20px en cada interacción)
+      yesSize += 20;
+      yesButton.style.fontSize = yesSize + "px";
+      yesButton.style.padding = (16 + yesSize / 8) + "px " + (32 + yesSize / 8) + "px";
+
+      // Generar 5 frases de lovePhrasesNo sin solaparse con las ubicaciones existentes
+      let exclusions = [
+        yesButton.getBoundingClientRect(),
+        noButton.getBoundingClientRect(),
+        ...placedNoRects
+      ];
+      for (let i = 0; i < 5; i++) {
+        let loveText = document.createElement("div");
+        loveText.textContent = lovePhrasesNo[loveIndexNo % lovePhrasesNo.length];
+        loveText.classList.add("love-text");
+        loveText.style.fontSize = "24px";
+        loveText.style.position = "absolute";
+        // Posicionar temporalmente fuera de vista para medir dimensiones
+        loveText.style.left = "-9999px";
+        loveText.style.top = "-9999px";
+        loveText.style.visibility = "hidden";
+        document.body.appendChild(loveText);
+
+        const rectText = loveText.getBoundingClientRect();
+        const pos = getNonOverlappingPosition(rectText.width, rectText.height, exclusions);
+        loveText.style.left = pos.x + "px";
+        loveText.style.top = pos.y + "px";
+        loveText.style.visibility = "visible";
+
+        const placedRect = loveText.getBoundingClientRect();
+        placedNoRects.push(placedRect);
+        exclusions.push(placedRect);
+        loveIndexNo++;
+      }
+    }
+
+    // Al presionar Yes:
+    // 1. Se eliminan los botones originales.
+    // 2. Se muestra la imagen del bunny y el mensaje.
+    // 3. Se generan 4 frases (lovePhrasesYes) en un estilo destacado sin que se solapen entre sí.
+    // 4. Se agrega un botón de reinicio para volver a hacerlo.
+    function showBunny() {
+      // Eliminar el contenedor de botones
+      buttonContainer.innerHTML = "";
+      // Mostrar la imagen y el mensaje
+      bunnyImage.classList.remove("hidden");
+      message.classList.remove("hidden");
+
+      // Generar las frases de lovePhrasesYes
+      let exclusions = [];
+      for (let i = 0; i < lovePhrasesYes.length; i++) {
+        let loveText = document.createElement("div");
+        loveText.textContent = lovePhrasesYes[i];
+        loveText.classList.add("love-text");
+        loveText.style.fontSize = "48px";
+        loveText.style.textShadow = "2px 2px 4px rgba(0,0,0,0.6)";
+        loveText.style.position = "absolute";
+        loveText.style.left = "-9999px";
+        loveText.style.top = "-9999px";
+        loveText.style.visibility = "hidden";
+        document.body.appendChild(loveText);
+
+        const rectText = loveText.getBoundingClientRect();
+        const pos = getNonOverlappingPosition(rectText.width, rectText.height, exclusions);
+        loveText.style.left = pos.x + "px";
+        loveText.style.top = pos.y + "px";
+        loveText.style.visibility = "visible";
+
+        const placedRect = loveText.getBoundingClientRect();
+        exclusions.push(placedRect);
+      }
+
+      // Agregar botón de reinicio para volver a hacerlo
+      addResetButton();
+    }
+
+    // Agrega un botón de reinicio en la parte inferior de la pantalla
+    function addResetButton() {
+      let resetButton = document.createElement("button");
+      resetButton.id = "resetButton";
+      resetButton.textContent = "Reiniciar";
+      resetButton.style.position = "fixed";
+      resetButton.style.bottom = "20px";
+      resetButton.style.left = "50%";
+      resetButton.style.transform = "translateX(-50%)";
+      resetButton.style.fontSize = "24px";
+      resetButton.style.padding = "10px 20px";
+      resetButton.style.borderRadius = "10px";
+      resetButton.style.backgroundColor = "#ff69b4";
+      resetButton.style.color = "white";
+      resetButton.style.border = "none";
+      resetButton.style.cursor = "pointer";
+      resetButton.addEventListener("click", resetPage);
+      document.body.appendChild(resetButton);
+    }
+
+    // Reinicia la página al estado inicial
+    function resetPage() {
+      // Elimina todas las frases creadas (love-text)
+      document.querySelectorAll(".love-text").forEach(el => el.remove());
+      // Elimina el botón de reinicio
+      let resetButton = document.getElementById("resetButton");
+      if (resetButton) {
+        resetButton.remove();
+      }
+      // Oculta la imagen y el mensaje
+      bunnyImage.classList.add("hidden");
+      message.classList.add("hidden");
+      // Reinicia variables globales
+      placedNoRects = [];
+      loveIndexNo = 0;
+      yesSize = 24;
+      // Restaura el contenedor de botones
+      buttonContainer.innerHTML = `
+        <button id="yes" onclick="showBunny()">Yes</button>
+        <button class="no" id="no" onclick="handleNo()">No</button>
+      `;
+      // Actualiza las referencias a los botones
+      yesButton = document.getElementById("yes");
+      noButton = document.getElementById("no");
+    }
+  </script>
+</body>
+</html>
